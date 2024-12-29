@@ -17,7 +17,7 @@
             margin: 10px auto;
             background: #fffaf0;
             max-width: 100%;
-            height: auto; /* Permet au canvas de s'adapter à la largeur de l'écran */
+            height: auto;
         }
         #playArea {
             margin-top: 5px;
@@ -68,7 +68,7 @@
                 padding: 8px 16px;
             }
             canvas {
-                width: 90%; /* Adapte le canvas à 90% de la largeur de l'écran */
+                width: 90%;
             }
         }
 
@@ -90,7 +90,7 @@
     <h1>Apprends l'Alphabet</h1>
     <h2>Lettres restantes : <span id="lettersRemaining"></span></h2>
     <div id="playArea">
-        <canvas id="alphabetCanvas" width="600" height="300"></canvas> <!-- Réduction de la taille du canvas -->
+        <canvas id="alphabetCanvas" width="600" height="300"></canvas>
         <br>
         <button onclick="playSound()">Écouter la lettre</button>
         <div id="message"></div>
@@ -109,6 +109,16 @@
     </audio>
 
     <script>
+        // Vérification de l'orientation
+        function checkOrientation() {
+            if (window.innerHeight > window.innerWidth) {
+                alert('Veuillez tourner votre appareil en mode paysage pour jouer.');
+            }
+        }
+
+        window.addEventListener('resize', checkOrientation);
+        checkOrientation();
+
         const canvas = document.getElementById('alphabetCanvas');
         const ctx = canvas.getContext('2d');
         const applauseImg = document.getElementById('applause');
@@ -123,10 +133,9 @@
         function updateLettersRemaining() {
             document.getElementById('lettersRemaining').textContent = remainingLetters.length;
 
-            // Si 5 lettres ou moins restent, afficher les boutons
             if (remainingLetters.length <= 5) {
                 endButtons.style.display = 'block';
-                canvas.style.display = 'none'; // Cache le canvas pour éviter toute interaction
+                canvas.style.display = 'none';
             }
         }
 
@@ -146,9 +155,9 @@
             displayedLetters = displayedLetters.sort(() => Math.random() - 0.5);
 
             displayedLetters.forEach((letter, index) => {
-                const x = 100 + index * 100; // Position ajustée pour canvas plus petit
-                const y = 150; // Ajustement vertical pour canvas plus petit
-                ctx.font = '40px Comic Sans MS'; // Taille de police réduite
+                const x = 100 + index * 100;
+                const y = 150;
+                ctx.font = '40px Comic Sans MS';
                 ctx.fillStyle = ['#ff66b2', '#ffcc00', '#66ccff', '#ff9933'][index];
                 ctx.fillText(letter, x, y);
 
@@ -175,8 +184,11 @@
 
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
 
             lettersOnCanvas.forEach((item) => {
                 if (
@@ -218,7 +230,7 @@
         function restartGame() {
             remainingLetters = [...alphabet];
             endButtons.style.display = 'none';
-            canvas.style.display = 'block'; // Réaffiche le canvas
+            canvas.style.display = 'block';
             updateLettersRemaining();
             startGame();
         }
