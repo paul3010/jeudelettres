@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apprends l'Alphabet</title>
+    <style>
+        body {
+            background: linear-gradient(to bottom, #ffccff, #ff99cc);
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            text-align: center;
+            color: #4d004d;
+        }
+        canvas {
+            border: 5px solid #ff66b2;
+            display: block;
+            margin: 10px auto;
+            background: #fffaf0;
+            max-width: 100%;
+            height: auto; /* Permet au canvas de s'adapter à la largeur de l'écran */
+        }
+        #playArea {
+            margin-top: 5px;
+        }
+        button {
+            background-color: #ff66b2;
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #ff3385;
+        }
+        h1 {
+            font-size: 32px;
+            margin-top: 10px;
+        }
+        h2 {
+            font-size: 24px;
+        }
+        #message {
+            font-size: 20px;
+            margin-top: 20px;
+            color: #ff66b2;
+        }
+        #applause {
+            display: none;
+            margin: 20px auto;
+        }
+        #endButtons {
+            display: none;
+        }
+
+        /* Styles responsives */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 28px;
+            }
+            h2 {
+                font-size: 20px;
+            }
+            button {
+                font-size: 16px;
+                padding: 8px 16px;
+            }
+            canvas {
+                width: 90%; /* Adapte le canvas à 90% de la largeur de l'écran */
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 24px;
+            }
+            h2 {
+                font-size: 18px;
+            }
+            button {
+                font-size: 14px;
+                padding: 6px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Apprends l'Alphabet</h1>
+    <h2>Lettres restantes : <span id="lettersRemaining"></span></h2>
+    <div id="playArea">
+        <canvas id="alphabetCanvas" width="600" height="300"></canvas> <!-- Réduction de la taille du canvas -->
+        <br>
+        <button onclick="playSound()">Écouter la lettre</button>
+        <div id="message"></div>
+        <img id="applause" src="https://i.imgur.com/E8gQ7kX.gif" alt="Applaudissements" width="200">
+        <div id="endButtons">
+            <button onclick="restartGame()">Recommencer</button>
+            <button onclick="quitGame()">Quitter</button>
+        </div>
+    </div>
+
+    <audio id="correctSound">
+        <source src="correct.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="incorrectSound">
+        <source src="incorrect.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const canvas = document.getElementById('alphabetCanvas');
+        const ctx = canvas.getContext('2d');
+        const applauseImg = document.getElementById('applause');
+        const correctSound = document.getElementById('correctSound');
+        const incorrectSound = document.getElementById('incorrectSound');
+        const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+        let currentLetter = '';
+        const lettersOnCanvas = [];
+        let remainingLetters = [...alphabet];
+        const endButtons = document.getElementById('endButtons');
+
+        function updateLettersRemaining() {
+            document.getElementById('lettersRemaining').textContent = remainingLetters.length;
+
+            // Si 5 lettres ou moins restent, afficher les boutons
+            if (remainingLetters.length <= 5) {
+                endButtons.style.display = 'block';
+                canvas.style.display = 'none'; // Cache le canvas pour éviter toute interaction
+            }
+        }
+
+        function drawLetters() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            lettersOnCanvas.length = 0;
+
+            let displayedLetters = [];
+            while (displayedLetters.length < 4 && remainingLetters.length > 0) {
+                const randomLetter = remainingLetters[Math.floor(Math.random() * remainingLetters.length)];
+                if (!displayedLetters.includes(randomLetter) && randomLetter !== currentLetter) {
+                    displayedLetters.push(randomLetter);
+                }
+            }
+
+            displayedLetters.push(currentLetter);
+            displayedLetters = displayedLetters.sort(() => Math.random() - 0.5);
+
+            displayedLetters.forEach((letter, index) => {
+                const x = 100 + index * 100; // Position ajustée pour canvas plus petit
+                const y = 150; // Ajustement vertical pour canvas plus petit
+                ctx.font = '40px Comic Sans MS'; // Taille de police réduite
+                ctx.fillStyle = ['#ff66b2', '#ffcc00', '#66ccff', '#ff9933'][index];
+                ctx.fillText(letter, x, y);
+
+                lettersOnCanvas.push({
+                    letter,
+                    x: x - 20,
+                    y: y - 40,
+                    width: 60,
+                    height: 60
+                });
+            });
+        }
+
+        function getRandomLetter() {
+            const index = Math.floor(Math.random() * remainingLetters.length);
+            return remainingLetters[index];
+        }
+
+        function playSound() {
+            const msg = new SpeechSynthesisUtterance(currentLetter);
+            msg.lang = 'fr-FR';
+            window.speechSynthesis.speak(msg);
+        }
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            lettersOnCanvas.forEach((item) => {
+                if (
+                    x > item.x &&
+                    x < item.x + item.width &&
+                    y > item.y &&
+                    y < item.y + item.height
+                ) {
+                    if (item.letter === currentLetter) {
+                        showSuccessMessage();
+                        remainingLetters = remainingLetters.filter(letter => letter !== currentLetter);
+                        updateLettersRemaining();
+                        if (remainingLetters.length > 5) {
+                            startGame();
+                        }
+                    } else {
+                        incorrectSound.currentTime = 0;
+                        incorrectSound.play();
+                    }
+                }
+            });
+        });
+
+        function showSuccessMessage() {
+            applauseImg.style.display = 'block';
+            correctSound.currentTime = 0;
+            correctSound.play();
+
+            setTimeout(() => {
+                applauseImg.style.display = 'none';
+            }, 2000);
+        }
+
+        function startGame() {
+            currentLetter = getRandomLetter();
+            drawLetters();
+        }
+
+        function restartGame() {
+            remainingLetters = [...alphabet];
+            endButtons.style.display = 'none';
+            canvas.style.display = 'block'; // Réaffiche le canvas
+            updateLettersRemaining();
+            startGame();
+        }
+
+        function quitGame() {
+            alert('Merci d\'avoir joué ! À bientôt !');
+        }
+
+        updateLettersRemaining();
+        startGame();
+    </script>
+</body>
+</html>
